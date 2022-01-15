@@ -127,3 +127,7 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# Big Sqlite DB file
+*.sqlite
+*.db 

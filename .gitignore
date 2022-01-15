@@ -131,3 +131,5 @@ dmypy.json
 # Big Sqlite DB file
 *.sqlite
 *.db 
+# Ignore .csv
+*.csv

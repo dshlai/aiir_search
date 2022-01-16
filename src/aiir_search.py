@@ -162,54 +162,77 @@ def make_intersect(res1, res2):
     return sorted_inters
 
 
-dbConn = sqlite3.connect('aiir.db')
-search = sqlite3.connect("cord19_20211019_fts.sqlite")
-cur = search.cursor()
+def make_union(res1, res2):
+    """
+    Return uniono of two results, no sorting (logically can't sort a union result)
+    """
+    id_set1 = {i[-2] for i in res1}
+    id_set2 = {i[-2] for i in res2}
+    id_union = id_set1.union(id_set2)
 
-# 執行初步搜尋
-if chk_conn( search ) == True:
-    q1 = make_query(queryExpansion01)
-    q1 = make_statement(q1)
+    res1_in_union = [r for r in res1 if r[-2] in id_union]
 
-    q2 = make_query(queryExpansion02)
-    q2 = make_statement(q2)
-    res1 = cur.execute(q1).fetchall()
-    res2 = cur.execute(q2).fetchall()
+    # remove id already present in res1
+    id_union_dif_a = id_union.difference(id_set1)
+    
+    res2_in_union = [r for r in res2 if r[-2] in id_union_dif_a]
 
-    # 對兩個搜尋結果取交集
-    inters = make_intersect(res1, res2)
-
-else:
-    print( 'DB connect fail ~' )
-    sys.exit()
-
-# get pubmedID
-matchedPubmedId = [i[0] for i in inters]
-
-print("Found {} intersected articles".format(len(matchedPubmedId)))
-
-#======================================================================================================
-### 計算執行時間
-#======================================================================================================
-
-# 以交集的結果 再回 raw data 取得正式要回傳的資料
-final_results = []
-for mPid in matchedPubmedId:
-    cur = dbConn.cursor()
-    result = cur.execute("select pubmed_id, title, abstract, publish_time, authors, journal from metadata_oct19 where pubmed_id = ?", [mPid] ).fetchall()
-    final_results.append(result)
-
-end_time = time.time()
-seconds = end_time - start_time
-
-for res in final_results:
-    print(res)
+    return res1_in_union + res2_in_union
 
 
-# 將執行時間轉換成「 時 : 分 : 秒 」的格式
-m, s = divmod( seconds, 60 )
-h, m = divmod( m, 60 )
+def search_demo():
+    dbConn = sqlite3.connect('aiir.db')
+    search = sqlite3.connect("cord19_20211019_fts.sqlite")
+    cur = search.cursor()
 
-print( '執行時間 :: ', "%d : %02d : %02d" % (h, m, s) )
+    # 執行初步搜尋
+    if chk_conn( search ) == True:
+        q1 = make_query(queryExpansion01)
+        q1 = make_statement(q1)
 
-print( "task finished !!" )
+        q2 = make_query(queryExpansion02)
+        q2 = make_statement(q2)
+        res1 = cur.execute(q1).fetchall()
+        res2 = cur.execute(q2).fetchall()
+
+        # 對兩個搜尋結果取交集
+        inters = make_intersect(res1, res2)
+
+    else:
+        print( 'DB connect fail ~' )
+        sys.exit()
+
+    # get pubmedID
+    matchedPubmedId = [i[0] for i in inters]
+
+    print("Found {} intersected articles".format(len(matchedPubmedId)))
+
+    #======================================================================================================
+    ### 計算執行時間
+    #======================================================================================================
+
+    # 以交集的結果 再回 raw data 取得正式要回傳的資料
+    final_results = []
+    for mPid in matchedPubmedId:
+        cur = dbConn.cursor()
+        result = cur.execute("select pubmed_id, title, abstract, publish_time, authors, journal from metadata_oct19 where pubmed_id = ?", [mPid] ).fetchall()
+        final_results.append(result)
+
+    end_time = time.time()
+    seconds = end_time - start_time
+
+    for res in final_results:
+        print(res)
+
+
+    # 將執行時間轉換成「 時 : 分 : 秒 」的格式
+    m, s = divmod( seconds, 60 )
+    h, m = divmod( m, 60 )
+
+    print( '執行時間 :: ', "%d : %02d : %02d" % (h, m, s) )
+
+    print( "task finished !!" )
+
+
+if __name__ == "__main__":
+    pass
